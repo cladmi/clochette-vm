@@ -286,7 +286,8 @@ def install_riot():
 
     packages = ['make', 'docker.io']
     packages += ['python3-serial', 'python3-pexpect']
-    packages += ['python3-cryptography', 'python3-pyasn1', 'python3-ecdsa']
+    packages += ['python3-cryptography', 'python3-pyasn1', 'python3-ecdsa',
+                 'python3-crypto']
     install(' '.join(packages))
     disable_dns_mask_for_docker()
     run('pip3 install pytest pytest-html pyserial')
