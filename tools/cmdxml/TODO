@@ -1,0 +1,17 @@
+TODO List
+=========
+
+* See how to remove 'cmdxml.py' and make the package into a simple module file.
+  This requires manually declaring 'items' which would allow it to be used as
+  a pytest package.
+* Maybe change the fixture to be an 'executor' class to include the shell
+  configuration.
+* When 'cmdxml.py' is not needed anymore, declare as a pytest plugin
+  It will then not need to be imported anymore
+  It should be loaded a as plugin in the command line only when not installed
+* Rename the '_execute_command' functions to something nice
+  as they are displayed in the output on error…
+* Test in real cases
+* Implement URLS
+* Verify there are not existing solutions
+* TESTS TESTS TESTS ! ;) (tox ?)
