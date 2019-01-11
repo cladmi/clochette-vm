@@ -1,0 +1,35 @@
+# Pytest integration
+PYTEST_MK_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
+
+PYTEST ?= python3 -m pytest
+
+PYTEST_OUT_DIR ?= $(BINDIR)
+PYTEST_XML  ?= --junit-xml=$(PYTEST_OUT_DIR)/test_$(BOARD).xml
+PYTEST_HTML ?= --html=$(PYTEST_OUT_DIR)/test_$(BOARD).html --self-contained-html
+PYTEST_SUITE ?= riot_automated_tests
+PYTEST_CLASSNAME ?= $(BOARD).$(APPLICATION)
+
+# Load child 'fixture'
+PYTESTFLAGS += -p 'pytest_child'
+# Add the current directory to PYTHONPATH to find the plugin
+# This is needed because we are outside of RIOT and not in dist/pythonlibs
+pytest: export PYTHONPATH:=$(PYTEST_MK_DIR):$(PYTHONPATH)
+
+# Capture stdout using 'sys.stdout' and log to junit output
+PYTESTFLAGS += --capture=sys
+PYTESTFLAGS += -o junit_logging=system-out
+
+# junit testsuite config
+PYTESTFLAGS += --junit-prefix=$(PYTEST_CLASSNAME)
+PYTESTFLAGS += -o junit_suite_name=$(PYTEST_SUITE)
+
+.PHONY: pytest
+pytest: $(TEST_DEPS)
+	@# TODO handle 'no tests and create an empty file maybe ?'
+	@# This is not a file target to force rerunning for the moment
+	$(Q)$(PYTEST) $(PYTESTFLAGS) $(abspath $(TESTS))
+
+# Also generate the 'html' output file
+.PHONY: pytest-html
+pytest-html: PYTESTFLAGS += $(PYTEST_HTML)
+pytest-html: pytest
