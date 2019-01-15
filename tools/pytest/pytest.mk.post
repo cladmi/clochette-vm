@@ -23,6 +23,8 @@ PYTESTFLAGS += -o junit_logging=system-out
 PYTESTFLAGS += --junit-prefix=$(PYTEST_CLASSNAME)
 PYTESTFLAGS += -o junit_suite_name=$(PYTEST_SUITE)
 
+PYTESTFLAGS += $(PYTEST_XML)
+
 .PHONY: pytest
 pytest: $(TEST_DEPS)
 	@# TODO handle 'no tests and create an empty file maybe ?'
