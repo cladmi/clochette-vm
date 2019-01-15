@@ -1,0 +1,19 @@
+# Handle being used from here
+_CMDXML := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))/cmdxml
+
+
+CMDXML ?= $(_CMDXML)
+CMDXML_FLAGS ?= --junit-xml=$(BINDIR)/compile_$(BOARD).xml
+
+# Handle that 'BOARD' is overwritten by the global files...
+_BOARD := $(BOARD)
+cmdxml-clean-all: BOARD=$(_BOARD)
+
+# TODO make it more generic way for other targets
+.PHONY: cmdxml-clean-all
+cmdxml-clean-all:
+	"$(CMDXML)" $(CMDXML_FLAGS) --command 'make clean all'
+
+# Do not parse and export all the build variables
+# This is a HACK to prevent issues when running `make` inside of `make`
+GLOBAL_GOALS += cmdxml-clean-all

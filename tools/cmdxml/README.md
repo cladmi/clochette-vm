@@ -54,3 +54,11 @@ E    +  where 1 = _execute_command('test -f hello')
  generated xml file: .../report.xml
 =============== 1 failed, 2 passed, 1 deselected in 0.05 seconds ===============
 ```
+
+
+Integration in RIOT
+-------------------
+
+The integration is done through a global goal so must be used alone.
+
+    RIOT_MAKEFILES_GLOBAL_PRE=${THIS_DIR}/clean_all.mk.pre make -C tests/bloom_bytes/ cmdxml-clean-all
