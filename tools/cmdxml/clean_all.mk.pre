@@ -3,7 +3,8 @@ _CMDXML := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))/cmdxml
 
 
 CMDXML ?= $(_CMDXML)
-CMDXML_FLAGS ?= --junit-xml=$(BINDIR)/compile_$(BOARD).xml
+CMDXML_OUTDIR ?= $(BINDIR)
+CMDXML_FLAGS ?= --junit-xml=$(CMDXML_OUTDIR)/compile_$(BOARD).xml
 
 # Handle that 'BOARD' is overwritten by the global files...
 _BOARD := $(BOARD)
