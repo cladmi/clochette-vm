@@ -4,7 +4,13 @@ _CMDXML := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))/cmdxml
 
 CMDXML ?= $(_CMDXML)
 CMDXML_OUTDIR ?= $(BINDIR)
-CMDXML_FLAGS ?= --junit-xml=$(CMDXML_OUTDIR)/compile_$(BOARD).xml
+CMDXML_XML ?= --junit-xml=$(CMDXML_OUTDIR)/compile_$(BOARD).xml
+
+CMDXML_CLASSNAME ?= $(BOARD).$(APPLICATION).compilation
+CMDXML_SUITE ?= riot_compilation
+CMDXML_REPORTCFG ?= --junit-prefix=$(CMDXML_CLASSNAME) -o junit_suite_name=$(CMDXML_SUITE)
+
+CMDXML_FLAGS ?= $(CMDXML_XML) $(CMDXML_REPORTCFG)
 
 # Handle that 'BOARD' is overwritten by the global files...
 _BOARD := $(BOARD)
