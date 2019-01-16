@@ -3,27 +3,31 @@ PYTEST_MK_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 
 PYTEST ?= python3 -m pytest
 
-PYTEST_OUT_DIR ?= $(BINDIR)
-PYTEST_XML  ?= --junit-xml=$(PYTEST_OUT_DIR)/test_$(BOARD).xml
-PYTEST_HTML ?= --html=$(PYTEST_OUT_DIR)/test_$(BOARD).html --self-contained-html
-PYTEST_SUITE ?= riot_automated_tests
-PYTEST_CLASSNAME ?= $(BOARD).$(APPLICATION)
 
-# Load child 'fixture'
-PYTESTFLAGS += -p 'pytest_child'
-# Add the current directory to PYTHONPATH to find the plugin
-# This is needed because we are outside of RIOT and not in dist/pythonlibs
-pytest: export PYTHONPATH:=$(PYTEST_MK_DIR):$(PYTHONPATH)
+# Report names
+PYTEST_SUITE ?= riot_tests
+PYTEST_CLASSNAME ?= $(BOARD).$(APPLICATION).test
 
-# Capture stdout using 'sys.stdout' and log to junit output
-PYTESTFLAGS += --capture=sys
-PYTESTFLAGS += -o junit_logging=system-out
 
-# junit testsuite config
+# Output files for pytest 'test' command
+# board/application is also in the name to allow having a fixed PYTEST_OUT_DIR
+PYTEST_OUT_DIR ?= $(BUILD_DIR)/output/pytest_results/$(BOARD)/$(APPLICATION)
+PYTEST_XML_OUTPUT  ?= $(PYTEST_OUT_DIR)/$(PYTEST_CLASSNAME).xml
+
+# JunitXML testsuite config
+PYTESTFLAGS += --junit-xml=$(PYTEST_XML_OUTPUT)
 PYTESTFLAGS += --junit-prefix=$(PYTEST_CLASSNAME)
 PYTESTFLAGS += -o junit_suite_name=$(PYTEST_SUITE)
 
-PYTESTFLAGS += $(PYTEST_XML)
+# Pytest / RIOT integration:
+# - add the current directory to PYTHONPATH to find the plugin
+#   this is needed because we are outside of RIOT or not in dist/pythonlibs
+# - use 'child' fixture to communicate to the node
+# - use 'sys' capture to allow to allow output to both the report and terminal
+pytest: export PYTHONPATH:=$(PYTEST_MK_DIR):$(PYTHONPATH)
+PYTESTFLAGS += -p 'pytest_child'
+PYTESTFLAGS += --capture=sys -o junit_logging=system-out
+
 
 .PHONY: pytest
 pytest: $(TEST_DEPS)
@@ -31,7 +35,6 @@ pytest: $(TEST_DEPS)
 	@# This is not a file target to force rerunning for the moment
 	$(Q)$(PYTEST) $(PYTESTFLAGS) $(abspath $(TESTS))
 
-# Also generate the 'html' output file
-.PHONY: pytest-html
-pytest-html: PYTESTFLAGS += $(PYTEST_HTML)
-pytest-html: pytest
+.PHONY: pytest-no-stdout
+pytest-no-stdout: export TEST_LOG_CONSOLE=0
+pytest-no-stdout: pytest

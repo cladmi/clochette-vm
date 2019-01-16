@@ -3,7 +3,7 @@ pytest integration helper for 'testrunner'.
 
 For the moment most the 'child' creation has been duplicated here as there
 are no independant function for creating a child.
-I on purpose tried to not modify the implementation there for the moment.
+I on purpose tried to not modify the implementation in testrunner.
 
 Logging on the console while running tests can be disabled by setting
 environment variable TEST_LOG_CONSOLE=0 (default: 1)
