@@ -290,7 +290,7 @@ def install_riot():
                  'python3-crypto']
     install(' '.join(packages))
     disable_dns_mask_for_docker()
-    run('pip3 install pytest pytest-html pyserial')
+    run('pip3 install pytest pytest-html pyserial scapy')
 
 
 @task
