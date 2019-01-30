@@ -1,0 +1,3 @@
+IOTLAB_OS_CI_TOOLS_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
+
+include $(IOTLAB_OS_CI_TOOLS_DIR)/pytest/pytest.mk.post
