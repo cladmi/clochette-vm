@@ -1,34 +1,24 @@
 """
 pytest integration helper for 'testrunner'.
 
-For the moment most the 'child' creation has been duplicated here as there
-are no independant function for creating a child.
-I on purpose tried to not modify the implementation in testrunner.
-
 Logging on the console while running tests can be disabled by setting
 environment variable TEST_LOG_CONSOLE=0 (default: 1)
 
-The test timeout is extracted from either:
-
-* a `TIMEOUT` variable
-* the 'testrunner.run' timeout argument (text extracted)
-* default DEFAULT_TIMEOUT copied from testrunner as it is not set in a var
+The test timeout is extracted if possible from the 'testrunner.run' timeout
+argument (text extracted)
 """
 import os
 import sys
-import signal
-import subprocess
 import re
-import time
 
 import pexpect
 import pytest
-import testrunner
+
+from testrunner.spawn import setup_child, teardown_child
 
 
-DEFAULT_TIMEOUT = 10
 TEST_LOG_CONSOLE = bool(int(os.environ.get('TEST_LOG_CONSOLE', '1')))
-TEST_TIMEOUT_ATTR = 'TIMEOUT'
+PYTEST_PROPERTIES_VAR = 'PYTEST_PROPERTIES'
 
 
 #
@@ -36,7 +26,10 @@ TEST_TIMEOUT_ATTR = 'TIMEOUT'
 #
 
 SUPPORTED_TEST_NAMES = {'testfunc'}
-SUPPORTED_FIXTURES = {'child', 'request'}
+SUPPORTED_FIXTURES = {
+    'child', 'request',
+    'riot_set_junitxml_properties',
+}
 
 
 def pytest_collection_modifyitems(config, items):
@@ -60,10 +53,16 @@ def pytest_collection_modifyitems(config, items):
 def _keep_supported_fixtures(items, deselected, supported_fixtures):
     """Keep functions that have supported suppported_fixtures."""
     selected = []
+    supported_fixtures = set(supported_fixtures)
+
     for item in items:
-        if set(getattr(item, 'fixturenames', ())) <= set(supported_fixtures):
+        unsupported = (set(getattr(item, 'fixturenames', ())) -
+                       supported_fixtures)
+        if not unsupported:
             selected.append(item)
         else:
+            print('Unsupported fixtures: {}'.format(unsupported),
+                  file=sys.stderr)
             deselected.append(item)
     return selected, deselected
 
@@ -79,6 +78,19 @@ def _keep_supported_testfuncs(items, deselected, supported_names):
     return selected, deselected
 
 
+@pytest.fixture(scope="session", autouse=True)
+def riot_set_junitxml_properties(request, props_var=PYTEST_PROPERTIES_VAR):
+    """Add properties to junitxml file."""
+    try:
+        config_xml = getattr(request.config, "_xml", None)
+    except AttributeError:
+        pass
+    else:
+        properties = os.environ.get(props_var, '').split(' ')
+        for prop in properties:
+            config_xml.add_global_property(prop, os.environ[prop])
+
+
 class CustomSpawn(pexpect.spawn):
     """Convenient subclass to better catch pexpect timeout and eof errors.
 
@@ -86,6 +98,10 @@ class CustomSpawn(pexpect.spawn):
     At the same time, remove all traceback and context as we do not care about
     where in the original pexpect library.
     """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('encoding', 'utf-8')
+        super().__init__(*args, **kwargs)
 
     def expect(self, pattern, *args, **kwargs):
         # pylint:disable=arguments-differ
@@ -107,62 +123,36 @@ class CustomSpawn(pexpect.spawn):
 
 
 @pytest.fixture(scope="module")
-def child(request, timeout=None):
-    """Duplicate 'testrunner' child creation.
+def child(request, timeout=None, logconsole=TEST_LOG_CONSOLE):
+    """Implement the 'child' fixture."""
+    timeout_kwargs = {}
+    timeout = _test_timeout(request, timeout)
+    if timeout is not None:
+        timeout_kwargs['timeout'] = timeout
 
-    This should be replaced by testrunner having an object creation function
-    for this.
-    """
-    if timeout is None:
-        timeout = _timeout(request)
+    logfile = ConsoleAndCapture() if logconsole else sys.stdout
 
-    _child = CustomSpawn("make term", timeout=timeout,
-                         encoding='utf-8', codec_errors='replace')
-
-    # on many platforms, the termprog needs a short while to be ready...
-    time.sleep(testrunner.MAKE_TERM_STARTED_DELAY)
-
-    # Log either to console and capture or only captured stdout
-    _child.logfile = ConsoleAndCapture() if TEST_LOG_CONSOLE else sys.stdout
-
-    try:
-        subprocess.check_output(('make', 'reset'), stderr=subprocess.PIPE)
-    except subprocess.CalledProcessError:
-        # make reset yields error on some boards even if successful
-        pass
+    _child = setup_child(spawnclass=CustomSpawn,
+                         logfile=logfile, **timeout_kwargs)
 
     yield _child
 
-    # TODO check cleanup
-
     print("")
-    try:
-        os.killpg(os.getpgid(_child.pid), signal.SIGKILL)
-    except ProcessLookupError:
-        print("Process already stopped")
-
-    _child.close()
+    teardown_child(_child)
 
 
-def _timeout(request, timeout_attr=TEST_TIMEOUT_ATTR, default=60):
+def _test_timeout(request, timeout=None):
     """Try to extract the timeout from the calling 'request' context.
 
-    It returns the first of:
-     * a `timeout_attr` attribute defined in the module
-     * checking the text of the script to find `run` 'timeout=' argument
-     * `default` value
+    Returns 'timeout' if not None otherwise, check the text of the script
+    to find `run` 'timeout=' argument
     """
-
-    timeout = getattr(request.module, timeout_attr, None)
-    if timeout is not None:
-        return timeout
-
-    timeout = read_run_timeout(request.module.__file__, default=default)
-
+    if timeout is None:
+        timeout = _read_run_timeout(request.module.__file__)
     return timeout
 
 
-def read_run_timeout(testfile, default=None):
+def _read_run_timeout(testfile):
     """Return the 'timeout' value from the test file.
 
     This is a hack to extract timeout from the test file.
@@ -181,7 +171,7 @@ def read_run_timeout(testfile, default=None):
 
             timeout_match = timeout_re.search(run_args)
             if not timeout_match:
-                return default
+                return None
             timeout = timeout_match.group(1)
 
             return int(timeout)
