@@ -5,7 +5,7 @@ To have a test output grouped by first 'package' then 'class' then
 everything else, make the output xml have as testcase:
 
     <testcase classname="packagename.classame",
-                   name="packagename.classname.every.thin.else">
+                   name="every.thing.else">
 
 With only two elements in 'classname'.
 This was found by trial and errors in the jenkins test output.
@@ -24,8 +24,8 @@ class JenkinsNodeReporter(_pytest.junitxml._NodeReporter):
         It is done after the original 'record_testreport' that handles
         command line arguments.
 
-        'name' attribute gets both classname and name concatenated
         'classname' is restricted to its only 2 first parts.
+        'name' attribute gets the rest of classname and name concatenated
         """
 
         super().record_testreport(testreport)
@@ -36,12 +36,17 @@ class JenkinsNodeReporter(_pytest.junitxml._NodeReporter):
         # Expect 'classname' to not need conversion
         classname = self.attrs['classname']
 
+        classnames = classname.split('.')
+
         # This function is currently called two times, so ignore the second one
-        if name.startswith(classname):
+        # If classname is smaller than 2, ignore as not sure how to handle
+        # splitting the test name.
+        if len(classnames) <= 2:
             return
 
-        self.attrs['name'].uniobj = '.'.join((classname, name))
-        self.attrs['classname'] = '.'.join(classname.split('.')[0:2])
+        names = classnames[2:] + [name]
+        self.attrs['name'].uniobj = '.'.join(names)
+        self.attrs['classname'] = '.'.join(classnames[0:2])
 
     @classmethod
     def items_use_reporter(cls, config, items):
