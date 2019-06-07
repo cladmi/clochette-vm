@@ -4,19 +4,20 @@ CMDXML_MK_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 CMDXML ?= $(CMDXML_MK_DIR)/cmdxml
 
 # Report names
-CMDXML_SUITE ?= riot_compilation
-CMDXML_CLASSNAME ?= $(BOARD).$(APPLICATION).compilation
+CMDXML_SUITE ?= $(BOARD).$(TOOLCHAIN)
+CMDXML_CLASSNAME ?= $(BOARD).$(TOOLCHAIN)
+CMDXML_TESTCLASSNAME ?= $(CMDXML_CLASSNAME).compilation
 
 
 # Output files for cmdxml-clean-all command
 # board/application is also in the name to allow having a fixed CMDXML_OUT_DIR
 CMDXML_OUT_DIR ?= $(BUILD_DIR)/output/pytest_results/$(BOARD)/$(APPLICATION)
-CMDXML_XML_OUTPUT ?= $(CMDXML_OUT_DIR)/$(CMDXML_CLASSNAME).xml
+CMDXML_XML_OUTPUT ?= $(CMDXML_OUT_DIR)/$(CMDXML_TESTCLASSNAME).xml
 
 # JunitXML testsuite config
 CMDXMLFLAGS += --junit-xml=$(CMDXML_XML_OUTPUT)
-CMDXMLFLAGS += --junit-prefix=$(CMDXML_CLASSNAME)
-CMDXMLFLAGS += -o junit_suite_name=$(CMDXML_SUITE)
+CMDXMLFLAGS += --junit-prefix=$(CMDXML_TESTCLASSNAME)
+CMDXMLFLAGS += -o junit_suite_name=$(CMDXML_CLASSNAME)
 
 # Do not parse and export all the build variables
 # This is a HACK to prevent issues when running `make` inside of `make`
