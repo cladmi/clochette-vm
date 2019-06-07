@@ -4,7 +4,6 @@ PYTEST_MK_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 PYTEST ?= python3 -m pytest
 
 # Report names
-PYTEST_SUITE ?= riot_tests
 PYTEST_CLASSNAME ?= $(BOARD).$(APPLICATION)
 PYTEST_TESTCLASSNAME ?= $(PYTEST_CLASSNAME).test
 
@@ -17,7 +16,7 @@ PYTEST_TEST_XML_OUTPUT  ?= $(PYTEST_OUT_DIR)/$(PYTEST_TESTCLASSNAME).xml
 # JunitXML testsuite config
 PYTESTFLAGS += --junit-xml=$(PYTEST_TEST_XML_OUTPUT)
 PYTESTFLAGS += --junit-prefix=$(PYTEST_TESTCLASSNAME)
-PYTESTFLAGS += -o junit_suite_name=$(PYTEST_SUITE)
+PYTESTFLAGS += -o junit_suite_name=$(PYTEST_CLASSNAME)
 
 # Pytest / RIOT integration:
 # - add the current directory to PYTHONPATH to find the plugin
@@ -26,7 +25,7 @@ PYTESTFLAGS += -o junit_suite_name=$(PYTEST_SUITE)
 # - use 'sys' capture to allow to allow output to both the report and terminal
 pytest: export PYTHONPATH:=$(PYTEST_MK_DIR):$(PYTHONPATH)
 PYTESTFLAGS += -p 'pytest_child'
-PYTESTFLAGS += -p 'pytest_jenkins'
+# PYTESTFLAGS += -p 'pytest_jenkins'
 PYTESTFLAGS += --capture=sys -o junit_logging=system-out
 
 
