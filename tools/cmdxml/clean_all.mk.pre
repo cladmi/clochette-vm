@@ -18,6 +18,13 @@ CMDXMLFLAGS += --junit-xml=$(CMDXML_XML_OUTPUT)
 CMDXMLFLAGS += --junit-prefix=$(CMDXML_TESTCLASSNAME)
 CMDXMLFLAGS += -o junit_suite_name=$(CMDXML_CLASSNAME)
 
+# Pytest / RIOT integration:
+# - add the previous directory to PYTHONPATH to find the plugin
+#   this is needed because we are outside of RIOT or not in dist/pythonlibs
+# - Use 'jenkins' nice rewriting to have 'board.application' separation
+cmdxml-clean-all: export PYTHONPATH:=$(CMDXML_MK_DIR)/..:$(PYTHONPATH)
+CMDXMLFLAGS += -p 'pytest_jenkins'
+
 # Do not parse and export all the build variables
 # This is a HACK to prevent issues when running `make` inside of `make`
 GLOBAL_GOALS += cmdxml-clean-all

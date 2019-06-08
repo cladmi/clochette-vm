@@ -23,9 +23,9 @@ PYTESTFLAGS += -o junit_suite_name=$(PYTEST_CLASSNAME)
 #   this is needed because we are outside of RIOT or not in dist/pythonlibs
 # - use 'child' fixture to communicate to the node
 # - use 'sys' capture to allow to allow output to both the report and terminal
-pytest: export PYTHONPATH:=$(PYTEST_MK_DIR):$(PYTHONPATH)
+pytest: export PYTHONPATH:=$(PYTEST_MK_DIR):$(PYTEST_MK_DIR)/..:$(PYTHONPATH)
 PYTESTFLAGS += -p 'pytest_child'
-# PYTESTFLAGS += -p 'pytest_jenkins'
+PYTESTFLAGS += -p 'pytest_jenkins'
 PYTESTFLAGS += --capture=sys -o junit_logging=system-out
 
 
